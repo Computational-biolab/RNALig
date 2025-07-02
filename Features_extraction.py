@@ -1,4 +1,4 @@
-Google colab link: https://colab.research.google.com/drive/1u7pWCd-Jpg1_U6xAdtR4rpJ3HI5Mr8b_#scrollTo=A0kMXXYEAJM9
+#Google colab link: https://colab.research.google.com/drive/1u7pWCd-Jpg1_U6xAdtR4rpJ3HI5Mr8b_#scrollTo=A0kMXXYEAJM9
 
 # Clean uninstall
 !pip uninstall -y numpy pandas scipy rdkit
