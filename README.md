@@ -26,9 +26,10 @@ git clone https://github.com/yourusername/RNALig.git
 cd RNALig
 pip install -r requirements.txt
 sudo apt-get install -y vienna-rna openbabel
-
+Load Model dependencies
 Features Extracted
-RNA Descriptors
-Ligand Properties
+RNA-specific features
+Ligand-specific features
+Comples-specific features
 RNA–Ligand Interaction Metrics 
-Predictive Output: Binding Affinity in kcal/mol
+Predictive Output: Binding Affinity (kcal/mol)
