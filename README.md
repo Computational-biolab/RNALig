@@ -29,6 +29,6 @@ sudo apt-get install -y vienna-rna openbabel
 
 Features Extracted
 RNA Descriptors
-Ligand Properties (via RDKit & PubChemPy)
-RNA–Ligand Interaction Metrics (VDW & Electrostatic contacts)
+Ligand Properties
+RNA–Ligand Interaction Metrics 
 Predictive Output: Binding Affinity in kcal/mol
