@@ -13,8 +13,8 @@ RNALig is a machine learning-based pipeline designed to **predict the binding af
 
 RNALig/
 ├── notebooks/ # All Colab notebooks
-├── Features_UN.py # Feature extraction script (modular)
-├── RandomFR.py # Prediction script using Random Forest
+├── Features.py # Feature extraction script (modular)
+├── Binding Affinity Predictor.py # Prediction script using Random Forest
 ├── models/ # Trained ML model (joblib .pkl)
 ├── sample_input/ # Example PDBs and input CSVs
 ├── requirements.txt # Python dependencies
