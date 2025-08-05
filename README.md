@@ -24,8 +24,8 @@ RNALig/
 ├── requirements.txt # Python dependencies
 
 
-*Add One-Line Command for Prediction
-python Binding_Affinity_Predictor.py --input sample_input/features.csv --output prediction.csv
+*Add One-Line Command for Prediction:
+-python Binding_Affinity_Predictor.py --input sample_input/features.csv --output prediction.csv
 
 *Compatibility 
 Tested on:
