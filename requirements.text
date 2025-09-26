@@ -1,0 +1,10 @@
+streamlit>=1.36
+pandas
+numpy
+scikit-learn==1.2.2
+joblib>=1.2
+biopython
+mdanalysis
+rdkit-pypi
+py3Dmol
+pubchempy
