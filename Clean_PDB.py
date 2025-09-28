@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 Google colab: https://colab.research.google.com/drive/1LSxz-l2kczM9fi3W_mor72IlOP2vFq7R
 
 
@@ -8,6 +9,21 @@ def clean_pdb_colab(input_pdb_path, output_pdb_path, ligand_resnames=None):
     standard_nucleotides = {'A', 'U', 'G', 'C'}
     excluded_resnames = {'HOH', 'NA', 'K', 'CL', 'MG', 'ZN', 'CA', 'MN', 'FE', 'CU', 'BR', 'IOD',
                          'NI', 'HG', 'AG', 'CD', 'AU', 'PB', 'RB'}
+=======
+import sys
+import os
+
+def clean_pdb(input_pdb_path, output_pdb_path=None, ligand_resnames=None):
+    standard_nucleotides = {'A', 'U', 'G', 'C'}
+    excluded_resnames = {
+        'HOH', 'NA', 'K', 'CL', 'MG', 'ZN', 'CA', 'MN', 'FE', 'CU', 'BR', 'IOD',
+        'NI', 'HG', 'AG', 'CD', 'AU', 'PB', 'RB'
+    }
+
+    if output_pdb_path is None:
+        base_name = os.path.splitext(os.path.basename(input_pdb_path))[0]
+        output_pdb_path = f"{base_name}_cleaned.pdb"
+>>>>>>> 1e3dc63 (Initial commit of RNALig GUI)
 
     cleaned_lines = []
 
@@ -32,6 +48,7 @@ def clean_pdb_colab(input_pdb_path, output_pdb_path, ligand_resnames=None):
     with open(output_pdb_path, 'w') as outfile:
         outfile.writelines(cleaned_lines)
 
+<<<<<<< HEAD
     return output_pdb_path
 
 # Upload multiple files
@@ -51,3 +68,16 @@ for f in cleaned_files:
     print(f" - {f}")
 for cleaned_file in cleaned_files:
     files.download(cleaned_file)
+=======
+    print(f"✅ Cleaned PDB saved: {output_pdb_path}")
+    return output_pdb_path
+
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python Clean_PDB.py <input.pdb>")
+        sys.exit(1)
+
+    input_file = sys.argv[1]
+    clean_pdb(input_file)
+>>>>>>> 1e3dc63 (Initial commit of RNALig GUI)

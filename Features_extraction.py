@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #Google colab link: https://colab.research.google.com/drive/1u7pWCd-Jpg1_U6xAdtR4rpJ3HI5Mr8b_#scrollTo=A0kMXXYEAJM9
 
 # Clean uninstall
@@ -428,3 +429,351 @@ def merge_and_download_all_features(rna_dict, ligand_dict, complex_dict, output_
     return final_df
 
 final_df = merge_and_download_all_features(rna_dict, ligand_dict, complex_dict)
+=======
+# streamlit_app.py
+import streamlit as st
+import pandas as pd
+import numpy as np
+import tempfile, os, io, zipfile, traceback, joblib, difflib
+
+# Import your existing modules
+from Clean_PDB import clean_pdb
+from Features_extraction import (
+    extract_pdb_id, extract_rna_features,
+    detect_ligands as old_detect_ligands,
+    extract_ligand_features, extract_complex_features
+)
+
+# Try to import Bio.PDB for robust detection; fall back if missing
+try:
+    from Bio.PDB import PDBParser
+    _HAS_BIOPDB = True
+    _parser = PDBParser(QUIET=True)
+except Exception:
+    _HAS_BIOPDB = False
+    _parser = None
+
+st.set_page_config(page_title="RNALig — Option1 fixed", layout="wide")
+
+# ---------------------------
+# Load model & pipeline
+# ---------------------------
+@st.cache_resource
+def load_pipeline():
+    # choose model file; prefer retrained if present
+    model_file = "retrained_rf_model_with_full_data.pkl" if os.path.exists("retrained_rf_model_with_full_data.pkl") else "best_rf_model.pkl"
+    pipeline = {
+        "model": joblib.load(model_file),
+        "imputer": joblib.load("imputer.pkl"),
+        "scaler": joblib.load("scaler.pkl"),
+        "target_scaler": joblib.load("target_scaler.pkl"),
+        # a fallback list — still we will attempt to infer exact expected names from fitted objects
+        "features": [
+            "nucleotide_composition_A", "nucleotide_composition_U",
+            "nucleotide_composition_G", "nucleotide_composition_C",
+            "gc_content", "minimum_free_energy", "Molecular Weight (g/mol)",
+            "Hydrogen Bond Donors", "Hydrogen Bond Acceptors", "LogP",
+            "TPSA (Å²)", "Atom Count", "Chiral Atom Count",
+            "num_electrostatic_contacts", "avg_electrostatic_distance",
+            "num_vdw_contacts", "avg_vdw_distance"
+        ]
+    }
+    return pipeline
+
+pipeline = load_pipeline()
+
+# ---------------------------
+# Robust ligand detection
+# ---------------------------
+def robust_detect_ligands_local(pdb_file, return_residue_tokens=False):
+    """
+    Return (ligands_list, residues_info).
+    residues_info is a list of dicts with keys: resname, chain, resseq, token
+    """
+    ligands = []
+    residues_info = []
+    if _HAS_BIOPDB and _parser is not None:
+        try:
+            structure = _parser.get_structure("s", pdb_file)
+            for model in structure:
+                for chain in model:
+                    ch_id = chain.id if chain.id is not None else ""
+                    for residue in chain:
+                        resname = residue.get_resname().strip()
+                        # residue.id -> tuple (hetfield, resseq, icode)
+                        hetflag = residue.id[0]
+                        resseq = residue.id[1]
+                        icode = residue.id[2].strip() if len(residue.id) > 2 else ""
+                        token = f"{resname}_{ch_id}_{resseq}{('_'+icode) if icode else ''}"
+                        residues_info.append({
+                            "resname": resname,
+                            "chain": ch_id,
+                            "resseq": resseq,
+                            "token": token
+                        })
+                        # Skip standard nucleotides
+                        if resname in ('A','U','G','C','DA','DT','DG','DC'):
+                            continue
+                        # skip waters/ions simple check
+                        if resname.upper() in {"HOH","WAT","NA","CL","MG","CA","K"}:
+                            continue
+                        # consider as ligand
+                        ligands.append(token if return_residue_tokens else resname)
+            # dedupe preserving order
+            seen = set()
+            uniq = []
+            for l in ligands:
+                if l not in seen:
+                    seen.add(l); uniq.append(l)
+            return uniq, residues_info
+        except Exception as e:
+            # fallback to old detector
+            print("robust_detect_ligands_local error:", e)
+    # fallback: use older detector (may return simple resnames)
+    try:
+        res = old_detect_ligands(pdb_file) or []
+        residues_info = [{"resname": r, "chain": "", "resseq": "", "token": r} for r in res]
+        return res, residues_info
+    except Exception:
+        return [], []
+
+# ---------------------------
+# Feature alignment & prediction helpers
+# ---------------------------
+def infer_expected_feature_names(pipeline_obj):
+    """Try to extract exact feature names used for fit from fitted components."""
+    for key in ("imputer", "scaler", "model"):
+        comp = pipeline_obj.get(key)
+        if comp is None:
+            continue
+        if hasattr(comp, "feature_names_in_"):
+            return list(getattr(comp, "feature_names_in_"))
+        try:
+            if hasattr(comp, "get_feature_names_out"):
+                out = list(comp.get_feature_names_out())
+                if out:
+                    return out
+        except Exception:
+            pass
+    # fallback
+    return list(pipeline_obj.get("features", []))
+
+def fuzzy_map(provided_keys, expected_keys):
+    """Map expected -> provided using normalized lowercase & difflib close matches."""
+    prov_map = {k.lower().replace(" ", "").replace("(", "").replace(")", ""): k for k in provided_keys}
+    mapping = {}
+    for exp in expected_keys:
+        key_norm = exp.lower().replace(" ", "").replace("(", "").replace(")", "")
+        if key_norm in prov_map:
+            mapping[exp] = prov_map[key_norm]
+            continue
+        close = difflib.get_close_matches(key_norm, prov_map.keys(), n=1, cutoff=0.80)
+        mapping[exp] = prov_map[close[0]] if close else None
+    return mapping
+
+def build_input_df(feature_dict, pipeline_obj):
+    expected = infer_expected_feature_names(pipeline_obj)
+    if not expected:
+        return pd.DataFrame([feature_dict])
+    # If already has all expected keys
+    if all(k in feature_dict for k in expected):
+        return pd.DataFrame([{k: feature_dict.get(k, np.nan) for k in expected}])
+    # Try fuzzy mapping
+    mapping = fuzzy_map(list(feature_dict.keys()), expected)
+    missing = [k for k,v in mapping.items() if v is None]
+    if missing:
+        # include debug for UI
+        debug = {
+            "expected_sample": expected[:30],
+            "provided_sample": list(feature_dict.keys())[:60],
+            "missing_expected_count": len(missing),
+            "missing_expected_preview": missing[:20]
+        }
+        raise ValueError("Feature name mismatch (missing expected features).", debug)
+    # build row
+    row = {exp: feature_dict.get(mapping[exp], np.nan) for exp in expected}
+    return pd.DataFrame([row], columns=expected)
+
+def predict_with_pipeline(feature_dict, pipeline_obj):
+    X = build_input_df(feature_dict, pipeline_obj)
+    imputer = pipeline_obj.get("imputer")
+    scaler = pipeline_obj.get("scaler")
+    model = pipeline_obj.get("model")
+    target_scaler = pipeline_obj.get("target_scaler", None)
+
+    if imputer is not None:
+        X_imp = imputer.transform(X)
+    else:
+        X_imp = X.values
+    if scaler is not None:
+        X_scl = scaler.transform(X_imp)
+    else:
+        X_scl = X_imp
+    if model is None:
+        raise RuntimeError("No model in pipeline.")
+    y_scaled = model.predict(X_scl)
+    if target_scaler is not None:
+        try:
+            y = target_scaler.inverse_transform(y_scaled.reshape(-1,1)).flatten()
+        except Exception:
+            y = target_scaler.inverse_transform(y_scaled)
+    else:
+        y = y_scaled
+    return float(y[0])
+
+# ---------------------------
+# Helpers to process PDB -> features -> predict
+# ---------------------------
+def process_pdb_file(pdb_path, chosen_ligand=None):
+    pdb_id = extract_pdb_id(pdb_path)
+    try:
+        cleaned = clean_pdb(pdb_path)
+    except Exception:
+        cleaned = pdb_path
+
+    # determine ligand name to pass to extract_ligand_features (resname portion)
+    ligand_name = None
+    if chosen_ligand:
+        ligand_name = chosen_ligand.split("_")[0] if "_" in chosen_ligand else chosen_ligand
+
+    # extract features
+    try:
+        rna_feats = extract_rna_features(cleaned, pdb_id) or {}
+    except Exception as e:
+        rna_feats = {}
+        print("RNA features error:", e)
+    try:
+        lig_feats = extract_ligand_features(ligand_name) if ligand_name else {}
+    except Exception as e:
+        lig_feats = {}
+        print("Ligand features error:", e)
+    try:
+        complex_feats = extract_complex_features(cleaned) or {}
+    except Exception as e:
+        complex_feats = {}
+        print("Complex features error:", e)
+
+    merged = {}
+    merged.update(rna_feats)
+    merged.update(lig_feats)
+    merged.update(complex_feats)
+    merged["PDB_File"] = pdb_id
+    merged["Used_Ligand"] = ligand_name
+
+    # Try to predict with alignment
+    try:
+        pred = predict_with_pipeline(merged, pipeline)
+        merged["Predicted_Binding_Affinity_kcal_per_mol"] = pred
+        merged["Status"] = "SUCCESS"
+    except ValueError as e:
+        # feature name mismatch; provide debug info
+        merged["Predicted_Binding_Affinity_kcal_per_mol"] = None
+        merged["Status"] = f"FAILED: feature name mismatch"
+        # attach debug info to return for UI if present
+        merged["_debug"] = e.args[1] if len(e.args) > 1 else {}
+    except Exception as e:
+        merged["Predicted_Binding_Affinity_kcal_per_mol"] = None
+        merged["Status"] = f"FAILED: {str(e)}"
+        merged["_debug"] = {"exception": str(e)}
+    return merged
+
+# ---------------------------
+# UI - Option 1 only (focus)
+# ---------------------------
+st.title("🧬 RNALig — RNA–Ligand Binding Affinity Predictor (Option 1)")
+
+st.header("Option 1 — Upload 1–5 PDB files (quick manually-reviewed run)")
+uploaded_multi = st.file_uploader("Upload 1–5 PDB files", type=["pdb"], accept_multiple_files=True, key="opt1_uploader")
+
+# session state for choices
+if "opt1_choices" not in st.session_state:
+    st.session_state.opt1_choices = {}
+
+if uploaded_multi:
+    if len(uploaded_multi) > 5:
+        st.error("Please upload at most 5 PDB files for Option 1.")
+    else:
+        files = []
+        for f in uploaded_multi:
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".pdb")
+            tmp.write(f.read()); tmp.flush(); tmp.close()
+            files.append((f.name, tmp.name))
+
+        st.markdown("#### Per-file ligand selection (auto-select single-ligand files)")
+        for idx, (display_name, local_path) in enumerate(files):
+            st.markdown(f"**{idx+1}. {display_name}**")
+            ligs, residues_info = robust_detect_ligands_local(local_path, return_residue_tokens=True)
+            # show residue summary — now includes chain and resseq
+            with st.expander("Show residue summary (debug)"):
+                if residues_info:
+                    # ensure columns order and presence
+                    df_res = pd.DataFrame(residues_info)
+                    # ensure chain column exists
+                    if 'chain' not in df_res.columns:
+                        df_res['chain'] = ""
+                    st.dataframe(df_res[['resname','chain','resseq','token']].head(200))
+                else:
+                    st.info("No residue info available.")
+
+            # Behavior:
+            # - exactly 1 ligand -> auto-select
+            # - >1 ligand -> dropdown and required selection
+            # - 0 ligands -> manual input allowed
+            if not ligs:
+                st.warning("No ligands auto-detected.")
+                manual_val = st.text_input(f"Manual ligand for {display_name} (resname or token)", key=f"opt1_manual_{idx}")
+                use_manual = st.checkbox(f"Use manual ligand for {display_name}", key=f"opt1_use_manual_{idx}")
+                if use_manual and manual_val.strip():
+                    st.session_state.opt1_choices[display_name] = manual_val.strip()
+                else:
+                    st.session_state.opt1_choices.setdefault(display_name, None)
+            elif len(ligs) == 1:
+                st.success(f"Single ligand detected: {ligs[0]} (auto-selected)")
+                st.session_state.opt1_choices[display_name] = ligs[0]
+            else:
+                st.info(f"Multiple ligands detected ({len(ligs)}). Please choose one.")
+                choice = st.selectbox(f"Select ligand for {display_name}", options=ligs, key=f"opt1_select_{idx}")
+                st.session_state.opt1_choices[display_name] = choice
+
+        st.markdown("---")
+        # show quick-predict when single file only and ligand chosen
+        if len(files) == 1 and st.session_state.opt1_choices.get(files[0][0]) is not None:
+            if st.button("Quick Predict this single PDB"):
+                chosen = st.session_state.opt1_choices.get(files[0][0])
+                res = process_pdb_file(files[0][1], chosen_ligand=chosen)
+                if res.get("_debug"):
+                    st.error("Prediction failed due to feature-name mismatch. See debug below.")
+                    st.json(res.get("_debug"))
+                elif res.get("Status", "").startswith("FAILED"):
+                    st.error(res.get("Status"))
+                else:
+                    st.metric("Predicted binding affinity (kcal/mol)", f"{res.get('Predicted_Binding_Affinity_kcal_per_mol'):.4f}")
+                    st.json({k: res.get(k) for k in ("PDB_File","Used_Ligand","Predicted_Binding_Affinity_kcal_per_mol","Status") if k in res})
+
+        # Run Predictions for multiple files
+        if st.button("Run Predictions (Option 1)"):
+            missing = [n for n,ch in st.session_state.opt1_choices.items() if ch is None]
+            if missing:
+                st.error("Cannot run: some files are missing ligand selections. Fill them first.")
+            else:
+                results = []
+                prog = st.progress(0)
+                total = len(files)
+                for i,(display_name, local_path) in enumerate(files, start=1):
+                    chosen = st.session_state.opt1_choices.get(display_name)
+                    row = process_pdb_file(local_path, chosen_ligand=chosen)
+                    results.append(row)
+                    prog.progress(int(i/total*100))
+                df = pd.DataFrame(results)
+                st.success("Option 1 predictions complete")
+                # show debug column if present
+                if any("_debug" in r for r in results):
+                    st.warning("Some rows have debug info (feature name mismatch). See _debug column.")
+                display_cols = [c for c in df.columns if c != "_debug"]
+                st.dataframe(df[display_cols].fillna("").head(200))
+                st.download_button("Download CSV (Option 1)", df.to_csv(index=False).encode(), file_name="rnalig_opt1_results.csv", mime="text/csv")
+else:
+    st.info("Upload 1–5 PDB files to run Option 1.")
+
+# End of file — Option 2 omitted here for brevity (you can keep your existing Option2 code)
+>>>>>>> 1e3dc63 (Initial commit of RNALig GUI)
