@@ -1,0 +1,11 @@
+Miniconda*.sh
+models/
+data/
+uploads/
+results/
+*.pkl
+*.pt
+*.sdf
+*.zip
+*.7z
+*.tar.gz
