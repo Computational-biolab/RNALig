@@ -11,7 +11,7 @@ RNALig is a structure-based machine learning model designed to predict the bindi
 *Try it instantly on Google Colab – no installation required!
 1. Clean PDBs: [PDB Cleaner](https://colab.research.google.com/drive/1LSxz-l2kczM9fi3W_mor72IlOP2vFq7R) | Remove unwanted molecules and prep PDBs for feature extraction having receptor and ligands.
 2. Extract Features: [Feature Extractor](https://colab.research.google.com/drive/1u7pWCd-Jpg1_U6xAdtR4rpJ3HI5Mr8b_) | Extract RNA, ligand, and RNA–ligand complex features |
-3. Predict Binding Affinity: [Binding Affinity Predictor](https://colab.research.google.com/drive/1ZFgGIhVFuunZtIllH1kUleCFePZYWsD8) | Predict binding affinity using a trained ML model |
+3. Predict Binding Affinity: [Binding Affinity Predictor](https://colab.research.google.com/drive/1t__onHfzPnMIpNyn2w2Vy6e1mZMa_5bd) | Predict binding affinity using a trained ML model | Only one trained model file (binding_affinity_pipeline.pkl) is required for prediction.
 
 ## Folder Structure
 
