@@ -1,130 +1,93 @@
-Google colab link: https://colab.research.google.com/drive/1ZFgGIhVFuunZtIllH1kUleCFePZYWsD8#scrollTo=1wiLUQ24PeUA
+##https://colab.research.google.com/drive/1t__onHfzPnMIpNyn2w2Vy6e1mZMa_5bd#scrollTo=ZWrqENxFxTZl
 
-!pip install joblib
-!pip install -U scikit-learn
+# predict_from_pipeline.py 
 
-# Import libraries
 import pandas as pd
 import numpy as np
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import GridSearchCV
-from sklearn.preprocessing import StandardScaler
-from sklearn.impute import SimpleImputer
-from sklearn.metrics import r2_score, mean_squared_error
 import joblib
-import matplotlib.pyplot as plt
-import seaborn as sns
+import sys
+from pathlib import Path
 
-# Upload your training CSV file
-from google.colab import files
-uploaded = files.upload()
+# ========= CONFIG (edit these filenames if needed) =========
+PIPELINE_FILE = "binding_affinity_pipeline.pkl"   # produced by training
+FEATURES_FILE = "Features.csv"                    # user-provided features with same columns as training
+OUTPUT_FILE   = "RNALig_Predictions.csv"
+QUIET = True  # set False to see logs
 
-# Load training data
-training_file_path = list(uploaded.keys())[0]
-training_data = pd.read_csv(training_file_path)
-print("✅ Training data loaded successfully!")
+def _log(msg): 
+    if not QUIET: 
+        print(msg)
 
-# Define input features and target
-features = [
-    "nucleotide_composition_A", "nucleotide_composition_U",
-    "nucleotide_composition_G", "nucleotide_composition_C",
-    "gc_content", "minimum_free_energy", "Molecular Weight (g/mol)",
-    "Hydrogen Bond Donors", "Hydrogen Bond Acceptors", "LogP", "TPSA (Å²)",
-    "Atom Count", "Chiral Atom Count", "num_electrostatic_contacts",
-    "avg_electrostatic_distance", "num_vdw_contacts", "avg_vdw_distance"
-]
-target = "Binding Affinity (kcal/mol)"
+def main():
+    # --- sanity on files ---
+    for f in [PIPELINE_FILE, FEATURES_FILE]:
+        if not Path(f).exists():
+            raise FileNotFoundError(f"❌ File not found: {f}")
 
-# Split data
-X_train = training_data[features]
-y_train = training_data[target]
+    # --- load pipeline ---
+    pipe = joblib.load(PIPELINE_FILE)
+    features = pipe["features"]
+    calib = pipe.get("calibration", None)  # {"a":..., "b":...} if present
 
-# Imputation and scaling
-imputer = SimpleImputer(strategy='mean')
-scaler = StandardScaler()
-target_scaler = StandardScaler()
+    # --- load features csv & normalize headers like training ---
+    df = pd.read_csv(FEATURES_FILE)
+    df.columns = (df.columns.str.strip()
+                  .str.replace("Å", "A", regex=False)
+                  .str.replace("²", "2", regex=False))
 
-X_train_imputed = imputer.fit_transform(X_train)
-X_train_scaled = scaler.fit_transform(X_train_imputed)
-y_train_scaled = target_scaler.fit_transform(y_train.values.reshape(-1, 1)).ravel()
+    # Keep PDB_ID if present (free-form)
+    pdb_ids = df["PDB_ID"] if "PDB_ID" in df.columns else pd.Series([f"PDB_{i}" for i in range(len(df))])
 
-rf_model = RandomForestRegressor(random_state=42)
-param_grid_rf = {
-    'n_estimators': [100, 200],
-    'max_depth': [10, 20, None],
-    'min_samples_split': [5, 10],
-    'min_samples_leaf': [2, 4],
-    'max_features': ['sqrt', 'log2']
-}
+    # --- verify required feature columns exist (case-sensitive, after normalization) ---
+    missing = [f for f in features if f not in df.columns]
+    if missing:
+        # helpful debug info before failing
+        print("❌ Missing required features in your CSV.\n"
+              "Here are some tips:\n"
+              " • Make sure your header names match exactly what the model was trained on.\n"
+              " • The script normalizes 'Å'→'A' and '²'→'2'.\n"
+              " • Check for trailing spaces or typos.\n")
+        print("Required features (from pipeline):")
+        for f in features: print("  -", f)
+        print("\nYour CSV columns:")
+        for c in df.columns: print("  -", c)
+        raise ValueError(f"\nMissing columns: {missing}")
 
-grid_search_rf = GridSearchCV(rf_model, param_grid_rf, cv=5, scoring='r2', n_jobs=-1)
-grid_search_rf.fit(X_train_scaled, y_train_scaled)
+    # --- build feature matrix exactly in trained order & coerce to numeric ---
+    X_raw = df[features].copy()
+    # Convert any non-numeric entries to NaN; imputer will fill
+    for col in X_raw.columns:
+        X_raw[col] = pd.to_numeric(X_raw[col], errors="coerce")
 
-best_rf_model = grid_search_rf.best_estimator_
-print("✅ Model trained. Best parameters:", grid_search_rf.best_params_)
+    # --- transform & predict ---
+    X_imp = pipe["imputer"].transform(X_raw)
+    X_scl = pipe["scaler"].transform(X_imp)
+    y_scaled = pipe["model"].predict(X_scl)
+    y_raw = pipe["target_scaler"].inverse_transform(y_scaled.reshape(-1, 1)).ravel()
 
-y_pred_train = best_rf_model.predict(X_train_scaled)
-y_pred_train_unscaled = target_scaler.inverse_transform(y_pred_train.reshape(-1, 1)).flatten()
-y_train_unscaled = target_scaler.inverse_transform(y_train_scaled.reshape(-1, 1)).flatten()
+    # --- apply calibration silently if present ---
+    if calib and all(k in calib for k in ("a", "b")):
+        y_final = calib["a"] + calib["b"] * y_raw
+        _log("(calibration applied internally)")
+    else:
+        y_final = y_raw
+        _log("(no calibration info found; using raw predictions)")
 
-print("🔎 R2 Score:", r2_score(y_train_unscaled, y_pred_train_unscaled))
-mse = mean_squared_error(y_train_unscaled, y_pred_train_unscaled)
-rmse = np.sqrt(mse)
-print("🔎 RMSE:", rmse)
+    # --- output: ONLY PDB_ID + calibrated prediction ---
+    out = pd.DataFrame({
+        "PDB_ID": pdb_ids,
+        "Predicted_Binding_Affinity (kcal/mol)": y_final
+    })
+    out.to_csv(OUTPUT_FILE, index=False)
+    if not QUIET:
+        print(f"✅ Saved → {OUTPUT_FILE}")
+        print(out.head())
 
-pipeline = {
-    'model': best_rf_model,
-    'imputer': imputer,
-    'scaler': scaler,
-    'target_scaler': target_scaler,
-    'features': features
-}
-joblib.dump(pipeline, 'binding_affinity_pipeline.pkl')
-print("✅ Full pipeline saved as 'binding_affinity_pipeline.pkl'")
-
-# Upload new PDB features CSV file
-uploaded = files.upload()
-new_pdb_file = list(uploaded.keys())[0]
-new_data = pd.read_csv(new_pdb_file)
-pipeline = joblib.load('binding_affinity_pipeline.pkl')
-
-# Prediction function
-def predict_binding_affinity(new_data, pipeline):
+if __name__ == "__main__":
     try:
-        required_features = pipeline['features']
-        missing = [f for f in required_features if f not in new_data.columns]
-        if missing:
-            raise ValueError(f"Missing required features: {missing}")
-
-        X_new = new_data[required_features]
-        X_imputed = pipeline['imputer'].transform(X_new)
-        X_scaled = pipeline['scaler'].transform(X_imputed)
-        y_scaled_pred = pipeline['model'].predict(X_scaled)
-        y_pred = pipeline['target_scaler'].inverse_transform(y_scaled_pred.reshape(-1, 1)).flatten()
-
-        result_df = pd.DataFrame({
-            "PDB ID": new_data.get("PDB ID", [f"PDB_{i}" for i in range(len(y_pred))]),
-            "Predicted Binding Affinity": y_pred
-        })
-
-        output_filename = f"Predicted_Binding_Affinity_{new_pdb_file}"
-        result_df.to_csv(output_filename, index=False)
-        print(f"✅ Predictions saved to: {output_filename}")
-        return result_df
+        main()
     except Exception as e:
-        print(f"❌ Error: {e}")
-
-# Run prediction
-predicted_df = predict_binding_affinity(new_data, pipeline)
-predicted_df.head()
-
-def plot_feature_importance(model, feature_names):
-    importances = model.feature_importances_
-    sorted_idx = np.argsort(importances)[::-1]
-    plt.figure(figsize=(10, 6))
-    sns.barplot(x=importances[sorted_idx], y=np.array(feature_names)[sorted_idx])
-    plt.title("Random Forest Feature Importances")
-    plt.tight_layout()
-    plt.show()
-
-plot_feature_importance(pipeline['model'], pipeline['features'])
+        # make sure you see useful info even if QUIET=True
+        print("\n🚨 Prediction failed.")
+        print(e)
+        sys.exit(1)
