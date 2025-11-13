@@ -1,7 +1,5 @@
 # RNALig: An AI-driven Scoring Function for RNA–Ligand Binding Affinity
 
-> **Status:** Research code accompanying the JPCB submission: *“RNALig: Learning Structure-Aware Features to Predict RNA–Small Molecule Binding Free Energy”*
-
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](#license)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](#requirements)
 [![Colab Predictor](https://img.shields.io/badge/Colab-Binding%20Affinity%20Predictor-black?logo=googlecolab)](COLAB_LINK_PREDICTOR)
@@ -9,7 +7,7 @@
 
 ---
 
-## ✨ Overview
+## Overview
 
 **RNALig** predicts RNA–small molecule binding free energy (ΔG, kcal·mol⁻¹) using structure-aware features derived from RNA, ligand, and complex geometries.
 It performs **automated feature extraction**, **binding affinity prediction**, and **validation** with interpretable metrics.
@@ -26,7 +24,7 @@ This repository contains:
 
 ---
 
-## 🧭 Repository Layout
+## Repository Layout
 
 ```
 RNALig/
@@ -42,7 +40,7 @@ RNALig/
 
 ---
 
-## 🚀 Quick Start (Feature Extraction)
+## Quick Start (Feature Extraction)
 
 ### Step 1: Create Environment
 
@@ -77,7 +75,7 @@ cp path/to/*.cif input_structures/
 
 ### Step 3: Run Feature Extraction
 
-#### 🧩 Batch Mode (PDB + mmCIF)
+#### Batch Mode (PDB + mmCIF)
 
 Extract features for all structures in a directory:
 
@@ -89,7 +87,7 @@ python Features_RNALig_Pro_Full.py \
   --viz_rna --viz_ligand
 ```
 
-#### 🧬 Single Structure Mode
+#### Single Structure Mode
 
 Run on one RNA–ligand complex (PDB or mmCIF):
 
@@ -131,7 +129,7 @@ Each **HTML file** visually summarizes feature extraction (pocket detection, SAS
 
 ---
 
-## 🔧 Advanced Options
+## Advanced Options
 
 Use these flags for control over extraction and visualization:
 
@@ -159,7 +157,7 @@ python Features_RNALig_Pro_Full.py \
 
 ---
 
-## 🧪 Features Summary
+## Features Summary
 
 All RNA, Ligand, and Complex features are computed by **`Features_RNALig_Pro_Full.py`**.
 
@@ -184,7 +182,7 @@ All RNA, Ligand, and Complex features are computed by **`Features_RNALig_Pro_Ful
 
 ---
 
-## 🧬 Validation & Reporting
+## Validation & Reporting
 
 * All outputs are unit-checked and logged in **HTML reports**.
 * Each computed feature is summarized for inspection.
@@ -192,7 +190,7 @@ All RNA, Ligand, and Complex features are computed by **`Features_RNALig_Pro_Ful
 
 ---
 
-## 🧯 Troubleshooting
+## Troubleshooting
 
 * **Missing freesasa:** ensure it’s installed via conda (`conda install -c conda-forge freesasa`).
 * **CIF parsing errors:** use valid mmCIF files or re-export via the PDB website.
@@ -200,14 +198,3 @@ All RNA, Ligand, and Complex features are computed by **`Features_RNALig_Pro_Ful
 * **User-site conflicts:** if pip warns `Defaulting to user installation`, set `export PYTHONNOUSERSITE=1`.
 
 ---
-
-## 📬 Contact
-
-**NextGen Computational Biology Lab**
-*Maintainer:* Priyanka Sharma
-*Email:* [your.email@domain](mailto:your.email@domain)
-*Website:* <lab or project website>
-
----
-
-> 🧡 *This version of RNALig uses the unified `Features_RNALig_Pro_Full.py` script with PDB/mmCIF support, visual validation (RNA & Ligand), and streamlined feature generation for publication-ready reproducibility.*
