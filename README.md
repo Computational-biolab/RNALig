@@ -149,7 +149,7 @@ python Features_RNALig_Pro_Full.py \
   --indir Training \
   --outdir Training/Results \
   --outcsv All_Features.csv \
-  --viz_rna --viz_ligand \
+  --results_rna --results_ligand \
   --pocket_cutoff 5.0 --pocket_sasa 0.05 \
   --rna_label_topk 5 --min_heavy 4 \
   --no-require_carbon --keep_ions --cutoff 5.0
@@ -186,7 +186,7 @@ All RNA, Ligand, and Complex features are computed by **`Features_RNALig_Pro_Ful
 
 * All outputs are unit-checked and logged in **HTML reports**.
 * Each computed feature is summarized for inspection.
-* Reviewers can verify per-structure reports in `viz/RNA/` and `viz/Ligand/`.
+* Users can verify per-structure reports in `results/RNA/` and `results/Ligand/`.
 
 ---
 
