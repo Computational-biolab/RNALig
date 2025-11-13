@@ -1,4 +1,4 @@
-# RNALig: An AI-driven Scoring Function for RNA–Ligand Binding Affinity
+# RNALig: An AI-driven Structure Based Scoring Function for RNA–Ligand Binding Affinity
 
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](#requirements)
 [![Colab CleanPDB](https://img.shields.io/badge/Colab-Clean%20PDB-black?logo=googlecolab)](https://colab.research.google.com/drive/1bKYbTiqtdPYGR4hRPqJp8IeC7GptRW_s)
