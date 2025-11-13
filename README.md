@@ -28,7 +28,7 @@ This repository contains:
 
 ```
 RNALig/
-├── Features_RNALig_Pro_Full.py     # Unified script for RNA, Ligand, and Complex features (PDB/mmCIF)
+├── Features_RNALig.py     # Unified script for RNA, Ligand, and Complex features (PDB/mmCIF)
 ├── models/                         # Trained models and feature lists
 ├── notebooks/                      # Colab notebooks (Predictor, Clean-PDB)
 ├── data/                           # Example datasets
@@ -80,7 +80,7 @@ cp path/to/*.cif input_structures/
 Extract features for all structures in a directory:
 
 ```bash
-python Features_RNALig_Pro_Full.py \
+python Features_RNALig.py \
   --indir ./input_structures \
   --outcsv final_features.csv \
   --outdir ./viz \
@@ -93,14 +93,14 @@ Run on one RNA–ligand complex (PDB or mmCIF):
 
 ```bash
 # PDB example
-python Features_RNALig_Pro_Full.py \
+python Features_RNALig.py \
   --pdb ./input_structures/1f27.pdb \
   --outcsv final_features.csv \
   --outdir ./viz \
   --viz_rna --viz_ligand
 
 # mmCIF example
-python Features_RNALig_Pro_Full.py \
+python Features_RNALig.py \
   --pdb ./input_structures/1f27.cif \
   --outcsv final_features.csv \
   --outdir ./viz \
@@ -145,7 +145,7 @@ Use these flags for control over extraction and visualization:
 Example:
 
 ```bash
-python Features_RNALig_Pro_Full.py \
+python Features_RNALig.py \
   --indir Training \
   --outdir Training/Results \
   --outcsv All_Features.csv \
