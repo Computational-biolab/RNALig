@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-RNALig Pro - Full RNA–Ligand Feature Extractor
+RNALig - RNA–Ligand Feature Extractor
 ==================================================================
 
 • Processes every PDB/mmCIF in --indir (no skips) and writes one row per PDB.
