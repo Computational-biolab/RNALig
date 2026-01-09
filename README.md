@@ -196,5 +196,9 @@ All RNA, Ligand, and Complex features are computed by **`Features_RNALig_Pro_Ful
 * **CIF parsing errors:** use valid mmCIF files or re-export via the PDB website.
 * **RDKit/OpenBabel conflicts:** avoid installing `rdkit-pypi`; always use conda-forge RDKit.
 * **User-site conflicts:** if pip warns `Defaulting to user installation`, set `export PYTHONNOUSERSITE=1`.
-
+## Polymeric Amino Acid Handling
+* RNALig is designed for RNA–small molecule complexes. When a PDB structure contains polymeric amino acid residues (e.g., ARG) instead of a discrete small-molecule ligand, RNALig retains RNA-level features only and skips ligand and complex descriptors to preserve chemical validity.
+* Such cases are explicitly annotated in the output:
+&Ligand_Type = polymeric_amino_acid
+&Feature_Extraction_Status = RNA_only_features
 ---
