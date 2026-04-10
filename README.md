@@ -18,7 +18,7 @@ This repository contains:
 
 * **Feature extraction (Linux CLI)** – batch processing of PDB/mmCIF files with automatic Results folder creation.
 * **Binding-affinity predictor (Google Colab)** – ΔG prediction and visualization.
-* **Clean-PDB utility (Google Colab)** – structure cleanup and ligand chain handling.
+* **Clean-PDB utility (Google Colab)** – structure cleanup and ligand chain handling. Link : https://colab.research.google.com/drive/1bKYbTiqtdPYGR4hRPqJp8IeC7GptRW_s
 
 > Every feature is physically validated, unit-checked, and summarized via HTML visualization reports for transparency and reproducibility.
 
