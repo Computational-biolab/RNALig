@@ -166,11 +166,13 @@ Upload :
 - Features file (final_features.csv)
 Output:
 Prediction_from_model.csv
-| Complex_ID | Predicted_binding_affinity (kcal/mol) |
-| ---------- | ------------------------------------- |
-| 1f27       | -7.85                                 |
+### Output
 
-## Pipeline Summary
+| Complex_ID | Predicted_binding_affinity (kcal/mol) |
+|------------|--------------------------------------|
+| 1f27       | -7.85                                |
+
+### Pipeline Summary
 
 RNA–Ligand Structure (PDB/CIF)
             ↓
