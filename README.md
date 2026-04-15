@@ -172,7 +172,16 @@ Prediction_from_model.csv
 |------------|--------------------------------------|
 | 1f27       | -7.85                                |
 
-### 🔹 Pipeline Summary
+### Pipeline Summary
+RNA–Ligand Structure (PDB/CIF)
+↓
+Feature Extraction (Features_RNALig.py)
+↓
+Feature Table (CSV)
+↓
+RNALig ML Model (.pkl)
+↓
+Predicted Binding Affinity (ΔG)
 
 
 ### RNA Features
