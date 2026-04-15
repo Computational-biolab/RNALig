@@ -28,10 +28,9 @@ This repository contains:
 
 ```
 RNALig/
-├── Codes                     # Unified script for features extraction for RNA, Ligand, and Complex features (PDB/mmCIF)
+├── Codes                           # Unified script for features extraction for RNA, Ligand, and Complex features (PDB/mmCIF)
 ├── models/                         # Trained model
-├── notebooks/                      # Colab notebooks (Predictor, Clean-PDB)
-├── src                             # Example datasets
+├── notebooks/                      # Colab notebooks (Predictor, Clean-PDB)                          
 ├── Data.zip                        # Results of training and testing for all the tools
 ├── LICENSE
 ├── README.md
