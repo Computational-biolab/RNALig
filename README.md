@@ -28,14 +28,14 @@ This repository contains:
 
 ```
 RNALig/
-├── Features_RNALig.py     # Unified script for RNA, Ligand, and Complex features (PDB/mmCIF)
-├── models/                         # Trained models and feature lists
+├── Codes                     # Unified script for features extraction for RNA, Ligand, and Complex features (PDB/mmCIF)
+├── models/                         # Trained model
 ├── notebooks/                      # Colab notebooks (Predictor, Clean-PDB)
-├── data/                           # Example datasets
-├── docs/                           # Schematics, flowcharts, and benchmarks
-├── CITATION.cff
+├── src                             # Example datasets
+├── Data.zip                        # Results of training and testing for all the tools
 ├── LICENSE
-└── README.md
+├── README.md
+└── environment.yml
 ```
 
 ---
@@ -67,8 +67,8 @@ Place your **PDB** or **mmCIF** files in a directory:
 
 ```bash
 mkdir input_structures
-cp path/to/*.pdb input_structures/
-cp path/to/*.cif input_structures/
+cp path/to/1f27.pdb input_structures/
+cp path/to/1f27.cif input_structures/
 ```
 
 ---
@@ -159,7 +159,7 @@ python Features_RNALig.py \
 
 ## Features Summary
 
-All RNA, Ligand, and Complex features are computed by **`Features_RNALig_Pro_Full.py`**.
+All RNA, Ligand, and Complex features are computed by **`Features_RNALig.py`**.
 
 ### RNA Features
 
