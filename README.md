@@ -48,7 +48,7 @@ conda create -n rnalig python=3.10 -y
 conda activate rnalig
 conda install -c conda-forge rdkit openbabel mdanalysis biopython freesasa -y
 conda install -c bioconda viennarna -y
-pip install numpy pandas scipy py3Dmol
+pip install numpy pandas scipy py3Dmol scikit-learn joblib openpyxl
 ```
 
 Alternatively, use the provided environment file:
@@ -66,7 +66,7 @@ Place your **PDB** or **mmCIF** files in a directory:
 
 ```bash
 mkdir input_structures
-cp path/to/1f27.pdb input_structures/
+cp path/to/1f27.pdb input_structures/  or
 cp path/to/1f27.cif input_structures/
 ```
 
@@ -108,7 +108,7 @@ python Features_RNALig.py \
 
 ---
 
-### Step 4: Output Folder Structure
+### Step 4: Features Output Folder Structure
 
 After execution, a **viz/** directory is automatically created:
 
@@ -159,6 +159,28 @@ python Features_RNALig.py \
 ## Features Summary
 
 All RNA, Ligand, and Complex features are computed by **`Features_RNALig.py`**.
+
+## Step 5: Binding Affinity Prediction
+Upload :
+- Trained model (.pkl)
+- Features file (final_features.csv)
+Output:
+Prediction_from_model.csv
+| Complex_ID | Predicted_binding_affinity (kcal/mol) |
+| ---------- | ------------------------------------- |
+| 1f27       | -7.85                                 |
+
+## Pipeline Summary
+
+RNA–Ligand Structure (PDB/CIF)
+            ↓
+Feature Extraction (Features_RNALig.py)
+            ↓
+Feature Table (CSV)
+            ↓
+RNALig ML Model (.pkl)
+            ↓
+Predicted Binding Affinity (ΔG)
 
 ### RNA Features
 
